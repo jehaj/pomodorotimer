@@ -1,12 +1,11 @@
 
 /// Personal pomodoro timer main function
-mod commands;
-mod pomodoro_timer;
+
 
 use std::process;
 use clap::Parser;
-use crate::commands::CommandStrings;
-use crate::pomodoro_timer::PomodoroTimer;
+use pomodorotimer::commands::CommandStrings;
+use pomodorotimer::pomodoro_timer::PomodoroTimer;
 
 #[derive(Parser)]
 struct Cli {
@@ -20,7 +19,7 @@ fn main() {
 
     println!("command to run: {:?}", args.command);
 
-    let mut timer = PomodoroTimer::new();
+    let mut timer = PomodoroTimer::new(1200, 300);
 
     // Switch on the valid commands
     let command_to_run = match args.command.as_str() {
