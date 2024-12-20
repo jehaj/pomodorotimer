@@ -135,7 +135,5 @@ impl PomodoroTimer{
     pub fn set_break_duration(&mut self, duration: Duration) {
         self.break_duration = duration
     }
-
-
 }
 
