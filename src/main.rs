@@ -4,6 +4,7 @@
 
 use std::process;
 use clap::Parser;
+use dialoguer::Input;
 use pomodorotimer::commands::CommandStrings;
 use pomodorotimer::pomodoro_timer::PomodoroTimer;
 
@@ -13,21 +14,14 @@ struct Cli {
     command: String,
 }
 
-
 fn main() {
     let args = Cli::parse();
 
-    println!("command to run: {:?}", args.command);
-
-    let mut timer = PomodoroTimer::new(5, 3);
+    println!("Pomodoro Timer Starting up");
 
     // Switch on the valid commands
     let command_to_run = match args.command.as_str() {
-        "StartSession" => Some(CommandStrings::StartSession),
-        "StopSession" => Some(CommandStrings::StopSession),
-        "start" => Some(CommandStrings::StartTimer),
-        "stop" => Some(CommandStrings::StopTimer),
-        "pause" => Some(CommandStrings::PauseTimer),
+        "start" => Some("s"),
         _ => {None}
     };
 
@@ -37,15 +31,46 @@ fn main() {
         process::exit(1);
     }
 
-    // Run the command
-    let command_to_run = command_to_run.unwrap();
+    let mut timer = PomodoroTimer::new(20 * 60, 5 * 60);
 
-    match command_to_run {
-        CommandStrings::StartSession => {todo!("Start a session")}
-        CommandStrings::StopSession => {todo!("End a session")}
-        CommandStrings::StartTimer => {timer.start_run()}
-        CommandStrings::StopTimer => {todo!("stop a session")}
-        CommandStrings::PauseTimer => {todo!("pause a session")}
+    // Commands for dialogue
+    loop {
+        let command : String = Input::new()
+            .with_prompt("Command to run?")
+            .interact_text()
+            .unwrap();
+
+        // Parse the command
+        let command_to_run = match command.as_str() {
+            "start" => Some(CommandStrings::StartTimer),
+            "stop" => Some(CommandStrings::StopTimer),
+            "pause" => Some(CommandStrings::PauseTimer),
+            "help" => Some(CommandStrings::Help),
+            "settings" => Some(CommandStrings::ViewSettings),
+            _ => None
+        };
+
+        // Run the given command
+        if let Some(command_to_run) = command_to_run {
+            match command_to_run {
+                CommandStrings::StartTimer => timer.start_timer(),
+                CommandStrings::StopTimer => timer.stop_timer(),
+                CommandStrings::PauseTimer => timer.pause_timer(),
+                CommandStrings::Help => println!("Available commands: start, stop, pause, help, update"),
+                CommandStrings::ViewSettings => {
+                    let work_duration = timer.get_work_duration();
+                    let break_duration = timer.get_work_duration();
+                    println!("Work duration: {:?}. Break duration: {:?}", work_duration, break_duration)
+                },
+                CommandStrings::UpdateDurations => {}
+            }
+        } else {
+            eprintln!("Command not recognized");
+        }
+
+
+
     }
+
 
 }

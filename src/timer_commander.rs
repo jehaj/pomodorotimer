@@ -27,5 +27,8 @@ impl TimerCommander {
         self.command_sender.send(TimerCommand::Stop).unwrap();
     }
 
+    pub fn resume_timer(&mut self) {
+        self.command_sender.send(TimerCommand::Start).unwrap();
+    }
 }
 

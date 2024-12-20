@@ -1,10 +1,11 @@
 /// Enum defining the different commands
 pub enum CommandStrings {
-    StartSession,
-    StopSession,
+    UpdateDurations,
+    ViewSettings,
     StartTimer,
     StopTimer,
     PauseTimer,
+    Help,
 }
 
 

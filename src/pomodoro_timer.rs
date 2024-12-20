@@ -12,7 +12,6 @@ pub struct PomodoroTimer{
     commander: Option<TimerCommander>
 }
 
-
 #[derive(PartialEq, Copy, Eq, Clone, Debug, Hash)]
 pub enum TimerState {
     Idle,
@@ -89,6 +88,17 @@ impl PomodoroTimer{
         *current_state
     }
 
+    pub fn start_timer(&mut self){
+        let current_state = self.current_state.lock().expect("Failed to lock current state");
+        if *current_state == Idle {
+            drop(current_state);
+            self.start_run();
+        } else {
+            drop(current_state);
+            self.resume_timer()
+        }
+    }
+
     pub fn pause_timer(&mut self){
         match &mut self.commander {
             None => println!("Have to start a sessions to give commands"),
@@ -103,6 +113,20 @@ impl PomodoroTimer{
         }
     }
 
+    pub fn resume_timer(&mut self) {
+        match &mut self.commander {
+            None => println!("Have to start a sessions to give commands"),
+            Some(c) => c.resume_timer()
+        }
+    }
+
+    pub fn get_work_duration(&self) -> Duration {
+        self.work_duration
+    }
+
+    pub fn get_break_duration(&self) -> Duration {
+        self.break_duration
+    }
 
 }
 

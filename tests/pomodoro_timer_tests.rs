@@ -3,7 +3,7 @@ mod pomodoro_timer_tests {
     use std::thread;
     use std::time::Duration;
     use pomodorotimer::pomodoro_timer::PomodoroTimer;
-    use pomodorotimer::pomodoro_timer::TimerState::{Idle, Working};
+    use pomodorotimer::pomodoro_timer::TimerState::{Breaking, Idle, Working};
 
     // Timer runner tests
     #[test]
@@ -38,8 +38,38 @@ mod pomodoro_timer_tests {
         timer.start_run();
         thread::sleep(Duration::from_secs(1));
 
-        // When I ask it to pause
+        // When I ask it to pause in working
         timer.pause_timer();
+
+        // Then it should remain in the same state
+        assert_eq!(timer.get_state(), Working);
+    }
+
+    #[test]
+    fn should_pause_in_breaking() {
+        // Given a timer
+        let mut timer = PomodoroTimer::new(0, 2);
+        timer.start_run();
+        thread::sleep(Duration::from_secs(1));
+
+        // When I ask it to pause in breaking
+        timer.pause_timer();
+
+        // Then it should remain in the same state
+        assert_eq!(timer.get_state(), Breaking);
+    }
+
+
+    #[test]
+    fn should_pause_and_resume_stop_in_idle() {
+        // Given a timer
+        let mut timer = PomodoroTimer::new(2, 1);
+        timer.start_run();
+        thread::sleep(Duration::from_secs(1));
+
+        // When I ask it to pause and resume
+        timer.pause_timer();
+        timer.resume_timer();
 
         // Then it should remain in the same state
         assert_eq!(timer.get_state(), Working);
