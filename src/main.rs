@@ -19,7 +19,7 @@ fn main() {
 
     println!("command to run: {:?}", args.command);
 
-    let mut timer = PomodoroTimer::new(1200, 300);
+    let mut timer = PomodoroTimer::new(5, 3);
 
     // Switch on the valid commands
     let command_to_run = match args.command.as_str() {
