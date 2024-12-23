@@ -105,6 +105,10 @@ impl PomodoroTimer{
     }
 
     pub fn pause_timer(&mut self){
+        if self.get_state() == Idle {
+            return;
+        }
+
         match &mut self.commander {
             None => println!("Have to start a sessions to give commands"),
             Some(c) => c.pause_timer()
@@ -120,8 +124,6 @@ impl PomodoroTimer{
             None => println!("Have to start a sessions to give commands"),
             Some(c) => {
                 c.stop_timer();
-                self.receiver = None;
-                self.commander = None;
             }
         }
     }
@@ -155,6 +157,9 @@ impl PomodoroTimer{
             let c = self.commander.as_ref().unwrap();
             let success = c.get_time_remaining();
             if !success {
+                // We are now in "Idle" since execution stopped
+                self.receiver = None;
+                self.commander = None;
                 return Duration::from_secs(3599)
             }
             r.recv().unwrap()
