@@ -1,4 +1,5 @@
 use std::sync::{mpsc, Arc, Mutex};
+use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::Duration;
 use crate::pomodoro_timer::TimerState::{Breaking, Idle, Working};
@@ -9,7 +10,8 @@ pub struct PomodoroTimer{
     work_duration: Duration,
     break_duration: Duration,
     current_state: Arc<Mutex<TimerState>>,
-    commander: Option<TimerCommander>
+    commander: Option<TimerCommander>,
+    receiver: Option<Receiver<Duration>>
 }
 
 #[derive(PartialEq, Copy, Eq, Clone, Debug, Hash)]
@@ -27,7 +29,8 @@ impl PomodoroTimer{
             work_duration: Duration::from_secs(work_duration_sec),
             break_duration: Duration::from_secs(break_duration_sec),
             current_state: Arc::new(Mutex::new(Idle)),
-            commander: None
+            commander: None,
+            receiver: None
         };
 
         // Create the new timer instance
@@ -38,23 +41,26 @@ impl PomodoroTimer{
     pub fn start_run(&mut self){
         // Create new Timer runner
         let (tx, rx) = mpsc::channel();
-        let mut timer_runner = TimerRunner::new(rx);
+        let (time_tx, time_rx) = mpsc::channel();
+
+        let mut timer_runner = TimerRunner::new(rx, time_tx);
 
         // Create the command injector
         let timer_commander = TimerCommander::new(tx);
 
         self.commander = Some(timer_commander);
+        self.receiver = Some(time_rx);
 
         // Save the times in separate variables
         let working_duration = self.work_duration;
         let break_duration = self.break_duration;
         let current_state = Arc::clone(&self.current_state);
 
+
         thread::spawn(move || {
             // Run through the phases
             // Start in working phase
             PomodoroTimer::update_state(&current_state, Working);
-            println!("Starting pomodoro timer");
             let exit_condition = timer_runner.run_timer(working_duration);
 
             if exit_condition == ExitCondition::Terminated {
@@ -64,7 +70,6 @@ impl PomodoroTimer{
 
             // Then breaking phase
             PomodoroTimer::update_state(&current_state, Breaking);
-            println!("Work session complete. Take a {}-minute break!", break_duration.as_secs() / 60);
             let exit_condition = timer_runner.run_timer(break_duration);
 
             if exit_condition == ExitCondition::Terminated {
@@ -74,8 +79,8 @@ impl PomodoroTimer{
 
             // Then return to idle
             PomodoroTimer::update_state(&current_state, Idle);
-            println!("Stopping pomodoro timer");
         });
+
     }
 
     fn update_state(state: &Arc<Mutex<TimerState>>, new_state: TimerState){
@@ -107,9 +112,17 @@ impl PomodoroTimer{
     }
 
     pub fn stop_timer(&mut self){
+        if self.get_state() == Idle {
+            return;
+        }
+
         match &mut self.commander {
             None => println!("Have to start a sessions to give commands"),
-            Some(c) => c.stop_timer()
+            Some(c) => {
+                c.stop_timer();
+                self.receiver = None;
+                self.commander = None;
+            }
         }
     }
 
@@ -135,5 +148,20 @@ impl PomodoroTimer{
     pub fn set_break_duration(&mut self, duration: Duration) {
         self.break_duration = duration
     }
+
+    pub fn get_remaining_time(&mut self) -> Duration {
+        if self.receiver.is_some() && self.commander.is_some() {
+            let r = self.receiver.as_ref().unwrap();
+            let c = self.commander.as_ref().unwrap();
+            let success = c.get_time_remaining();
+            if !success {
+                return Duration::from_secs(3599)
+            }
+            r.recv().unwrap()
+        } else {
+            Duration::from_secs(3599)
+        }
+    }
 }
+
 
