@@ -1,5 +1,4 @@
 use std::sync::mpsc::{Receiver, Sender};
-use std::thread;
 use std::time::{Duration, Instant};
 use crate::timer_commander::TimerCommand;
 use crate::timer_commander::TimerCommand::Stop;
@@ -67,7 +66,6 @@ impl TimerRunner {
                     Stop => return Stop,
                 }
             }
-            thread::sleep(Duration::from_secs(1));
         }
     }
 }

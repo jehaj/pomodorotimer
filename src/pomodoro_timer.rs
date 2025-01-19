@@ -167,6 +167,17 @@ impl PomodoroTimer{
             Duration::from_secs(3599)
         }
     }
+
+    pub fn set_state_time_period(&mut self, period: Duration, state: TimerState) {
+        // Stop timer when user updates duration
+        self.stop_timer();
+
+        match state {
+            Idle => {}
+            Working => {self.work_duration = period;},
+            Breaking => {self.break_duration = period},
+        }
+    }
 }
 
 

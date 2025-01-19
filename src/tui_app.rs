@@ -2,7 +2,7 @@ use std::time::Duration;
 use crossterm::event::poll;
 use tui_input::{Input, InputRequest};
 use ratatui::{crossterm::event::{self, Event, KeyCode, KeyEventKind}, layout::{Constraint, Layout, Position}, style::{Color, Modifier, Style, Stylize}, text, text::{Line, Span, Text}, widgets::{Block, List, ListItem, Paragraph}, DefaultTerminal, Frame};
-use crate::pomodoro_timer::PomodoroTimer;
+use crate::pomodoro_timer::{PomodoroTimer, TimerState};
 use crate::tui_app::MessageType::{InvalidCommand, ValidCommand};
 
 pub struct App {
@@ -23,7 +23,8 @@ enum InputMode {
 
 enum MessageType {
     ValidCommand,
-    InvalidCommand,
+    Information,
+    InvalidCommand
 }
 
 impl App {
@@ -157,6 +158,7 @@ impl App {
                 let color = match t {
                     ValidCommand => Color::Green,
                     InvalidCommand => Color::Red,
+                    MessageType::Information => Color::Yellow
                 };
                 ListItem::new(content).style(Style::default().fg(color))
             })
@@ -166,25 +168,70 @@ impl App {
     }
 
     fn submit_command(&mut self) {
-        let message = self.input.to_string();
+        let message = self.input.to_string().to_lowercase();
+        let mut reply: Option<String> = None;
+        let message_array: Vec<&str> = message.split_whitespace().collect();
 
-        let command_validity = match message.to_lowercase().as_str() {
-            "start" => {
+        let command_validity = match message_array.first() {
+            Some(&"start") => {
                 self.timer.start_timer();
                 ValidCommand
             },
-            "stop" => {
+            Some(&"stop") => {
                 self.timer.stop_timer();
                 ValidCommand
             },
-            "pause" => {
+            Some(&"pause") => {
                 self.timer.pause_timer();
                 ValidCommand
+            },
+            Some(&"help") => {
+                reply = Some(String::from("Commands: Start, Stop, Pause, set <state> <duration in min"));
+                ValidCommand
+            },
+            Some(&"set") => {
+                let mut command_validity = ValidCommand;
+                let state_to_update = match message_array.get(1) {
+                    Some(&"working") => Some(TimerState::Working),
+                    Some(&"breaking") => Some(TimerState::Breaking),
+                    _ => {
+                        reply = Some(String::from("Can only set the time for working or breaking. "));
+                        command_validity = InvalidCommand;
+                        None
+                    }
+                };
+
+                let time_in_min = message_array.get(2);
+                let mut new_time_amount = None;
+
+                match time_in_min {
+                    Some(time) => {
+                        let new_time = time.parse::<f32>();
+                        if let Ok(time) = new_time {
+                            new_time_amount = Some(time);
+                        } else {
+                            reply = Some(String::from("Invalid time"));
+                        }
+                    },
+                    None => command_validity = InvalidCommand
+                }
+
+                if new_time_amount.is_some() && state_to_update.is_some() {
+                    let time_in_min = new_time_amount.unwrap() * 60.0;
+                    let period = Duration::from_secs(time_in_min.floor() as u64);
+                    self.timer.set_state_time_period(period, state_to_update.unwrap())
+                }
+
+                command_validity
             },
             _ => InvalidCommand
         };
 
         self.messages.push((message, command_validity));
+
+        if reply.is_some() {
+            self.messages.push((reply.unwrap(), MessageType::Information))
+        }
 
         // Clear the terminal
         self.input = "".into();
