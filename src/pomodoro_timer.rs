@@ -2,8 +2,10 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::Duration;
+use chrono::Local;
 use crate::pomodoro_timer::TimerState::{Breaking, Idle, Working};
 use crate::timer_commander::TimerCommander;
+use crate::timer_database::{create_timer_run, establish_connection, get_timer_runs};
 use crate::timer_runner::{ExitCondition, TimerRunner};
 
 pub struct PomodoroTimer{
@@ -56,7 +58,6 @@ impl PomodoroTimer{
         let break_duration = self.break_duration;
         let current_state = Arc::clone(&self.current_state);
 
-
         thread::spawn(move || {
             // Run through the phases
             // Start in working phase
@@ -79,6 +80,11 @@ impl PomodoroTimer{
 
             // Then return to idle
             PomodoroTimer::update_state(&current_state, Idle);
+
+            // Log the completed iteration in the database
+            let connection = &mut establish_connection();
+            create_timer_run(connection, "Emil", &(working_duration.as_secs() as i32), &(break_duration.as_secs() as i32))
+
         });
 
     }
@@ -160,11 +166,11 @@ impl PomodoroTimer{
                 // We are now in "Idle" since execution stopped
                 self.receiver = None;
                 self.commander = None;
-                return Duration::from_secs(3599)
+                return self.get_work_duration();
             }
             r.recv().unwrap()
         } else {
-            Duration::from_secs(3599)
+            self.get_work_duration()
         }
     }
 
@@ -177,6 +183,22 @@ impl PomodoroTimer{
             Working => {self.work_duration = period;},
             Breaking => {self.break_duration = period},
         }
+    }
+
+    pub fn get_total_time_today(&self, username : &str) -> (i32, i32) {
+        let connection = &mut establish_connection();
+
+        let runs = get_timer_runs(connection, username);
+
+        let cur_date = Local::now().date_naive();
+
+        // Work out the total amount of time used today
+        runs.iter().filter(|tr|{
+            tr.date.eq(&cur_date)
+        }).fold((0, 0), |acc, tr|{
+            let (working, breaking) = acc;
+            (working + tr.working_time_secs, breaking + tr.breaking_time_secs)
+        })
     }
 }
 

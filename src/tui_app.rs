@@ -151,10 +151,11 @@ impl App {
         let messages: Vec<ListItem> = self
             .messages
             .iter()
+            .rev()
             .enumerate()
-            .map(|(i, m)| {
+            .map(|(_, m)| {
                 let (message, t) = m;
-                let content = Line::from(Span::raw(format!("{i}: {message}")));
+                let content = Line::from(Span::raw(format!("{message}")));
                 let color = match t {
                     ValidCommand => Color::Green,
                     InvalidCommand => Color::Red,
@@ -186,7 +187,7 @@ impl App {
                 ValidCommand
             },
             Some(&"help") => {
-                reply = Some(String::from("Commands: Start, Stop, Pause, set <state> <duration in min"));
+                reply = Some(String::from("Commands: Start, Stop, Pause, Set <state> <duration in min>, stats <today, all-time>"));
                 ValidCommand
             },
             Some(&"set") => {
@@ -223,6 +224,15 @@ impl App {
                 }
 
                 command_validity
+            },
+            Some(&"stats") => {
+                let (work_dur, break_dur) = self.timer.get_total_time_today("Emil");
+                reply = Some(format!(
+                    "Total work duration: {:?} minutes. Total break duration: {:?} minutes",
+                    work_dur / 60,
+                    break_dur / 60
+                ));
+                ValidCommand
             },
             _ => InvalidCommand
         };
