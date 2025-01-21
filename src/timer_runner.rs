@@ -31,9 +31,10 @@ impl TimerRunner {
             let remaining = duration - start_time.elapsed();
 
             // Check for new commands
-            let command = self.check_for_new_command();
 
-            if let Some(command) = command {
+            let command = self.command_receiver.try_recv();
+
+            if let Ok(command) = command {
                 match command {
                     TimerCommand::Start => continue,
                     TimerCommand::Pause => if self.wait_for_resume(remaining) == Stop { return ExitCondition::Terminated; },
@@ -44,17 +45,6 @@ impl TimerRunner {
         }
 
         ExitCondition::Ok
-    }
-
-    fn check_for_new_command(&mut self) -> Option<TimerCommand> {
-        // Try and get the new command
-        let command = self.command_receiver.try_recv();
-        // When present return it else return none
-        if let Ok(command) = command {
-            Some(command)
-        } else {
-            None
-        }
     }
 
     fn wait_for_resume(&mut self, remaining: Duration) -> TimerCommand {

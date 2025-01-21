@@ -181,7 +181,10 @@ impl PomodoroTimer{
                 self.commander = None;
                 return self.get_work_duration();
             }
-            r.recv().unwrap()
+            // Get the remaining time
+            let dur_res = r.try_recv();
+
+            dur_res.unwrap_or(self.get_work_duration())
         } else {
             self.get_work_duration()
         }

@@ -14,7 +14,8 @@ pub struct App {
     /// History of recorded messages
     messages: Vec<(String, MessageType)>,
     /// The pomodoro timer - Application
-    timer: PomodoroTimer
+    timer: PomodoroTimer,
+    prev_message: usize
 }
 
 enum InputMode {
@@ -22,6 +23,8 @@ enum InputMode {
     Editing,
 }
 
+
+#[derive(PartialEq)]
 enum MessageType {
     ValidCommand,
     Information,
@@ -34,7 +37,8 @@ impl App {
             input: "".into(),
             input_mode: InputMode::Normal,
             messages: vec![],
-            timer
+            timer,
+            prev_message: 0
         }
     }
 
@@ -60,6 +64,9 @@ impl App {
                             KeyCode::Backspace => self.delete_char(),
                             KeyCode::Left => self.move_cursor_left(),
                             KeyCode::Right => self.move_cursor_right(),
+                            KeyCode::Up => self.choose_prev_command(KeyCode::Up),
+                            KeyCode::Down => self.choose_prev_command(KeyCode::Down),
+
                             KeyCode::Esc => self.input_mode = InputMode::Normal,
                             _ => {}
                         },
@@ -273,6 +280,7 @@ impl App {
 
         // Clear the terminal
         self.input = "".into();
+        self.prev_message = 0;
     }
 
     fn enter_char(&mut self, char_entered: char) {
@@ -298,4 +306,32 @@ impl App {
         let move_left_request = InputRequest::GoToNextChar;
         self.input.handle(move_left_request);
     }
+
+    fn choose_prev_command(&mut self, code: KeyCode) {
+        let prev_message : Vec<String> = self.messages.iter().filter(|(_, val)|{
+            *val == ValidCommand
+        }).map(|(m, _)| {
+            m.clone()
+        }).rev().collect();
+
+        match code {
+            KeyCode::Up => self.prev_message = self.prev_message.saturating_add(1),
+            KeyCode::Down => self.prev_message = self.prev_message.saturating_sub(1),
+            _ => {}
+        }
+
+        let idx = self.prev_message;
+
+        if idx == 0 {
+            self.input = "".into();
+        } else {
+            match prev_message.get(idx.saturating_sub(1)) {
+                Some(msg) => {
+                    self.input = msg.clone().into();
+                },
+                None => {}
+            }
+        }
+    }
+
 }
