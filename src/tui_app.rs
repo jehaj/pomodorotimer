@@ -42,7 +42,7 @@ impl App {
         loop {
             terminal.draw(|frame| self.draw(frame)).expect("Could not draw");
 
-            if let Ok(true) = poll(Duration::from_millis(75)) {
+            if let Ok(true) = poll(Duration::from_millis(100)) {
                 if let Ok(Event::Key(key)) = event::read() {
                     match self.input_mode {
                         InputMode::Normal => match key.code {

@@ -83,9 +83,10 @@ mod pomodoro_timer_tests {
 
         // When I ask it to stop
         timer.stop_timer();
+        let state = timer.get_state();
 
         // Then it should return to "Idle"
-        assert_eq!(timer.get_state(), Idle);
+        assert_eq!(state, Idle);
     }
 
 }

@@ -1,4 +1,5 @@
 use std::sync::mpsc::{Receiver, Sender};
+use std::thread;
 use std::time::{Duration, Instant};
 use crate::timer_commander::TimerCommand;
 use crate::timer_commander::TimerCommand::Stop;
@@ -55,18 +56,19 @@ impl TimerRunner {
         }
     }
 
-    fn wait_for_resume(&mut self, remaining : Duration) -> TimerCommand {
-        loop {
-            let command = self.check_for_new_command();
-            if let Some(command) = command {
-                match command {
-                    TimerCommand::Pause => continue,
-                    TimerCommand::Start => return TimerCommand::Start,
-                    TimerCommand::GetTimeRemaining => self.time_sender.send(remaining).unwrap(),
-                    Stop => return Stop,
+    fn wait_for_resume(&mut self, remaining: Duration) -> TimerCommand {
+        while let Ok(command) = self.command_receiver.recv() {
+            match command {
+                TimerCommand::Pause => continue,
+                TimerCommand::Start => return TimerCommand::Start,
+                TimerCommand::GetTimeRemaining => {
+                    self.time_sender.send(remaining).unwrap();
+                    continue;
                 }
+                Stop => return Stop,
             }
         }
+        Stop
     }
 }
 
