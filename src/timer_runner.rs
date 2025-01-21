@@ -27,6 +27,7 @@ impl TimerRunner {
         // Start the timer
         let start_time = Instant::now();
         while start_time.elapsed() < duration {
+            thread::sleep(Duration::from_millis(10));
             let remaining = duration - start_time.elapsed();
 
             // Check for new commands
