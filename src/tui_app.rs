@@ -3,6 +3,7 @@ use crossterm::event::poll;
 use tui_input::{Input, InputRequest};
 use ratatui::{crossterm::event::{self, Event, KeyCode, KeyEventKind}, layout::{Constraint, Layout, Position}, style::{Color, Modifier, Style, Stylize}, text, text::{Line, Span, Text}, widgets::{Block, List, ListItem, Paragraph}, DefaultTerminal, Frame};
 use crate::pomodoro_timer::{PomodoroTimer, TimerState};
+use crate::pomodoro_timer::Period::{AllTime, Today};
 use crate::tui_app::MessageType::{InvalidCommand, ValidCommand};
 
 pub struct App {
@@ -169,7 +170,7 @@ impl App {
     }
 
     fn submit_command(&mut self) {
-        let message = self.input.to_string().to_lowercase();
+        let message = self.input.to_string();
         let mut reply: Option<String> = None;
         let message_array: Vec<&str> = message.split_whitespace().collect();
 
@@ -187,7 +188,7 @@ impl App {
                 ValidCommand
             },
             Some(&"help") => {
-                reply = Some(String::from("Commands: Start, Stop, Pause, Set <state> <duration in min>, stats <today, all-time>"));
+                reply = Some(String::from("Commands: Start, Stop, Pause, Set <state> <duration in min>, stats <today, all-time>, login <user-name>"));
                 ValidCommand
             },
             Some(&"set") => {
@@ -226,12 +227,39 @@ impl App {
                 command_validity
             },
             Some(&"stats") => {
-                let (work_dur, break_dur) = self.timer.get_total_time_today("Emil");
+                let when = message_array.get(1);
+
+                let (work_dur, break_dur) = match when {
+                    Some(&"today") => self.timer.get_total_time(Today),
+                    Some(&"all-time") => self.timer.get_total_time(AllTime),
+                    _ => (-1,-1)
+                };
+
                 reply = Some(format!(
-                    "Total work duration: {:?} minutes. Total break duration: {:?} minutes",
+                    "{:?}: Total work duration: {:?} minutes. Total break duration: {:?} minutes",
+                    self.timer.get_username().unwrap_or("None".to_string()),
                     work_dur / 60,
                     break_dur / 60
                 ));
+                ValidCommand
+            },
+            Some(&"login") => {
+                let username = message_array.get(1);
+
+                match username {
+                    Some(username) => {
+                        let success = self.timer.sign_in(username);
+                        if success {
+                            reply = Some(String::from("You are signed in!"))
+                        } else {
+                            reply = Some(String::from("Something went wrong trying to sign you in"))
+                        }
+                    },
+                    None => {
+                        reply = Some(String::from("Enter a username please"));
+                    }
+                };
+
                 ValidCommand
             },
             _ => InvalidCommand

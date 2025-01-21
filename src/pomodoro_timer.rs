@@ -3,6 +3,7 @@ use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::Duration;
 use chrono::Local;
+use crate::pomodoro_timer::Period::Today;
 use crate::pomodoro_timer::TimerState::{Breaking, Idle, Working};
 use crate::timer_commander::TimerCommander;
 use crate::timer_database::{create_timer_run, establish_connection, get_timer_runs};
@@ -13,7 +14,8 @@ pub struct PomodoroTimer{
     break_duration: Duration,
     current_state: Arc<Mutex<TimerState>>,
     commander: Option<TimerCommander>,
-    receiver: Option<Receiver<Duration>>
+    receiver: Option<Receiver<Duration>>,
+    username: Option<String>,
 }
 
 #[derive(PartialEq, Copy, Eq, Clone, Debug, Hash)]
@@ -23,6 +25,11 @@ pub enum TimerState {
     Breaking
 }
 
+#[derive(PartialEq)]
+pub enum Period {
+    Today,
+    AllTime,
+}
 
 impl PomodoroTimer{
     // Constructor that creates a new PomodoroTimer instance
@@ -32,7 +39,8 @@ impl PomodoroTimer{
             break_duration: Duration::from_secs(break_duration_sec),
             current_state: Arc::new(Mutex::new(Idle)),
             commander: None,
-            receiver: None
+            receiver: None,
+            username: None,
         };
 
         // Create the new timer instance
@@ -56,6 +64,7 @@ impl PomodoroTimer{
         // Save the times in separate variables
         let working_duration = self.work_duration;
         let break_duration = self.break_duration;
+        let username = self.username.clone();
         let current_state = Arc::clone(&self.current_state);
 
         thread::spawn(move || {
@@ -82,8 +91,11 @@ impl PomodoroTimer{
             PomodoroTimer::update_state(&current_state, Idle);
 
             // Log the completed iteration in the database
-            let connection = &mut establish_connection();
-            create_timer_run(connection, "Emil", &(working_duration.as_secs() as i32), &(break_duration.as_secs() as i32))
+            if username.is_some() {
+                let connection = &mut establish_connection();
+                create_timer_run(connection, &*username.unwrap(), &(working_duration.as_secs() as i32), &(break_duration.as_secs() as i32))
+            }
+
 
         });
 
@@ -185,20 +197,45 @@ impl PomodoroTimer{
         }
     }
 
-    pub fn get_total_time_today(&self, username : &str) -> (i32, i32) {
+    pub fn get_total_time(&self, period: Period) -> (i32, i32) {
         let connection = &mut establish_connection();
 
-        let runs = get_timer_runs(connection, username);
+        let user = self.get_username();
+
+        // Check that user is logged in
+        if user.is_none() {
+            return (0, 0);
+        }
+
+        let mut runs = get_timer_runs(connection, &*user.unwrap());
 
         let cur_date = Local::now().date_naive();
 
+        // Filter out all dates in case only today
+        if period == Today {
+            runs = runs.into_iter().filter(|tr|{
+                tr.date.eq(&cur_date)
+            }).collect();
+        };
+
         // Work out the total amount of time used today
-        runs.iter().filter(|tr|{
-            tr.date.eq(&cur_date)
-        }).fold((0, 0), |acc, tr|{
+        runs.into_iter().fold((0, 0), |acc, tr|{
             let (working, breaking) = acc;
             (working + tr.working_time_secs, breaking + tr.breaking_time_secs)
         })
+    }
+
+    // Dummy sign in
+    pub fn sign_in(&mut self, username : &str) -> bool {
+        if self.get_state() != Idle {
+            return false;
+        }
+        self.username = Some(username.to_string());
+        true
+    }
+
+    pub fn get_username(&self) -> Option<String> {
+        self.username.clone()
     }
 }
 
