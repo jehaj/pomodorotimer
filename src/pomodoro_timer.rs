@@ -6,7 +6,7 @@ use chrono::Local;
 use crate::pomodoro_timer::Period::Today;
 use crate::pomodoro_timer::TimerState::{Breaking, Idle, Working};
 use crate::timer_commander::TimerCommander;
-use crate::timer_database::{create_timer_run, establish_connection, get_timer_runs};
+use crate::timer_database::{create_timer_run, establish_connection, get_timer_runs, get_users};
 use crate::timer_runner::{ExitCondition, TimerRunner};
 
 pub struct PomodoroTimer{
@@ -240,6 +240,11 @@ impl PomodoroTimer{
 
     pub fn get_username(&self) -> Option<String> {
         self.username.clone()
+    }
+
+    pub fn get_users(&self) -> Vec<String> {
+        let connection = &mut establish_connection();
+        get_users(connection)
     }
 }
 

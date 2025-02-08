@@ -195,7 +195,7 @@ impl App {
                 ValidCommand
             },
             Some(&"help") => {
-                reply = Some(String::from("Commands: Start, Stop, Pause, Set <state> <duration in min>, stats <today, all-time>, login <user-name>"));
+                reply = Some(String::from("Commands: Start, Stop, Pause, Set <state> <duration in min>, stats <today, all-time>, login <user-name>, whoami"));
                 ValidCommand
             },
             Some(&"set") => {
@@ -267,6 +267,19 @@ impl App {
                     }
                 };
 
+                ValidCommand
+            },
+            Some(&"whoami") => {
+                let username = self.timer.get_username();
+                reply = match username {
+                    Some(u) => Some(format!("You are signed in as {:?}", u)),
+                    None => Some(String::from("You are not signed in"))
+                };
+                ValidCommand
+            },
+            Some(&"users") => {
+                let users = self.timer.get_users();
+                reply = Some(format!("Users: {:?}", users));
                 ValidCommand
             },
             _ => InvalidCommand

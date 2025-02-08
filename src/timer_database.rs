@@ -49,3 +49,12 @@ pub fn get_timer_runs(conn: &mut SqliteConnection, username: &str) -> Vec<TimerR
 
     results
 }
+
+pub fn get_users(conn: &mut SqliteConnection) -> Vec<String> {
+    use crate::schema::timer_runs::dsl::*;
+    timer_runs
+        .select(user)
+        .distinct()
+        .load(conn)
+        .expect("Error loading timer runs")
+}
