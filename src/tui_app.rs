@@ -195,7 +195,7 @@ impl App {
                 ValidCommand
             },
             Some(&"help") => {
-                reply = Some(String::from("Commands: Start, Stop, Pause, Set <state> <duration in min>, stats <today, all-time>, login <user-name>, whoami"));
+                reply = Some(String::from("Commands: Start, Stop, Pause, Set <state> <duration in min>, stats <today, all-time>, login <user-name>, whoami, users"));
                 ValidCommand
             },
             Some(&"set") => {
