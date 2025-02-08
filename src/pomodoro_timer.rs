@@ -141,8 +141,8 @@ impl PomodoroTimer{
         match &mut self.commander {
             None => println!("Have to start a sessions to give commands"),
             Some(c) => {
-                c.stop_timer();
                 PomodoroTimer::update_state(&self.current_state, Idle);
+                c.stop_timer();
             }
         }
     }

@@ -26,19 +26,26 @@ impl TimerRunner {
     pub fn run_timer(&mut self, duration: Duration) -> ExitCondition {
         // Start the timer
         let start_time = Instant::now();
-        while start_time.elapsed() < duration {
+        let mut time_in_pause = Duration::new(0, 0);
+
+        while start_time.elapsed() < duration + time_in_pause {
             thread::sleep(Duration::from_millis(10));
 
-            let remaining = duration.saturating_sub(start_time.elapsed());
+            let remaining = duration.saturating_sub(start_time.elapsed()) + time_in_pause;
 
             // Check for new commands
-
             let command = self.command_receiver.try_recv();
 
             if let Ok(command) = command {
                 match command {
                     TimerCommand::Start => continue,
-                    TimerCommand::Pause => if self.wait_for_resume(remaining) == Stop { return ExitCondition::Terminated; },
+                    TimerCommand::Pause => {
+                        let start_pause = Instant::now();
+                        if self.wait_for_resume(remaining) == Stop {
+                            return ExitCondition::Terminated;
+                        };
+                        time_in_pause += start_pause.elapsed();
+                    },
                     Stop => return ExitCondition::Terminated,
                     TimerCommand::GetTimeRemaining => self.time_sender.send(remaining).unwrap(),
                 }

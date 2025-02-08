@@ -78,7 +78,7 @@ mod pomodoro_timer_tests {
     #[test]
     fn should_stop_end_in_idle() {
         // Given a timer
-        let mut timer = PomodoroTimer::new(3, 2);
+        let mut timer = PomodoroTimer::new(10, 5);
         timer.start_run();
 
         // When I ask it to stop
@@ -87,6 +87,23 @@ mod pomodoro_timer_tests {
 
         // Then it should return to "Idle"
         assert_eq!(state, Idle);
+    }
+
+    #[test]
+    fn should_pause_stop_timer_runner() {
+        // Given a timer
+        let mut timer = PomodoroTimer::new(10, 2);
+        timer.start_run();
+
+        // When I ask it to pause
+        let time_rem_before = timer.get_remaining_time();
+        timer.pause_timer();
+        thread::sleep(Duration::from_secs(2));
+
+        // The when I start it again, it should have the same remaining time
+        timer.start_timer();
+        let time_rem_after = timer.get_remaining_time();
+        assert!(time_rem_before - time_rem_after < Duration::from_secs(1));
     }
 
 }
