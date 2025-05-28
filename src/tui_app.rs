@@ -100,11 +100,11 @@ impl App {
         let break_duration_sec = break_duration % 60;
 
         let timer_text = vec![
-            text::Line::from(format!("Time remaining: {:?}:{:?}", time_remaining_min, time_remaining_sec )),
+            text::Line::from(format!("Time remaining: {:02}:{:02}", time_remaining_min, time_remaining_sec )),
             text::Line::from(""),
             text::Line::from(format!("Timer state: {:?}", self.timer.get_state() )),
             text::Line::from(""),
-            text::Line::from(format!("Current stats: Working {:?}:{:?} and breaking {:?}:{:?}", work_duration_min, work_duration_sec, break_duration_min, break_duration_sec)),
+            text::Line::from(format!("Current stats: Working {:02}:{:02} and breaking {:02}:{:02}", work_duration_min, work_duration_sec, break_duration_min, break_duration_sec)),
         ];
 
         let timer_widget = Paragraph::new(timer_text)
