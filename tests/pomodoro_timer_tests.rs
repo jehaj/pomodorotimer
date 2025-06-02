@@ -1,15 +1,14 @@
-
 mod pomodoro_timer_tests {
-    use std::thread;
-    use std::time::Duration;
     use pomodorotimer::pomodoro_timer::PomodoroTimer;
     use pomodorotimer::pomodoro_timer::TimerState::{Breaking, Idle, Working};
+    use std::thread;
+    use std::time::Duration;
 
     // Timer runner tests
     #[test]
     fn should_new_timer_start_in_idle() {
         // Given a timer
-        let timer = PomodoroTimer::new( 0, 0);
+        let timer = PomodoroTimer::new(0, 0);
 
         // When I ask for it's state
         let got = timer.get_state();
@@ -59,7 +58,6 @@ mod pomodoro_timer_tests {
         assert_eq!(timer.get_state(), Breaking);
     }
 
-
     #[test]
     fn should_pause_and_resume_stop_in_idle() {
         // Given a timer
@@ -105,6 +103,4 @@ mod pomodoro_timer_tests {
         let time_rem_after = timer.get_remaining_time();
         assert!(time_rem_before - time_rem_after < Duration::from_secs(1));
     }
-
 }
-

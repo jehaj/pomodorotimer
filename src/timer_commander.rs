@@ -8,16 +8,13 @@ pub enum TimerCommand {
     GetTimeRemaining,
 }
 
-
 pub struct TimerCommander {
     command_sender: Sender<TimerCommand>,
 }
 
 impl TimerCommander {
     pub fn new(tx: Sender<TimerCommand>) -> Self {
-        TimerCommander {
-            command_sender: tx,
-        }
+        TimerCommander { command_sender: tx }
     }
 
     pub fn pause_timer(&mut self) {
@@ -39,4 +36,3 @@ impl TimerCommander {
         }
     }
 }
-

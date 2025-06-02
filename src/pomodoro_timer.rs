@@ -1,15 +1,15 @@
-use std::sync::{mpsc, Arc, Mutex};
-use std::sync::mpsc::Receiver;
-use std::thread;
-use std::time::Duration;
-use chrono::Local;
 use crate::pomodoro_timer::Period::Today;
 use crate::pomodoro_timer::TimerState::{Breaking, Idle, Working};
 use crate::timer_commander::TimerCommander;
 use crate::timer_database::{create_timer_run, establish_connection, get_timer_runs, get_users};
 use crate::timer_runner::{ExitCondition, TimerRunner};
+use chrono::Local;
+use std::sync::mpsc::Receiver;
+use std::sync::{mpsc, Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
-pub struct PomodoroTimer{
+pub struct PomodoroTimer {
     work_duration: Duration,
     break_duration: Duration,
     current_state: Arc<Mutex<TimerState>>,
@@ -22,7 +22,7 @@ pub struct PomodoroTimer{
 pub enum TimerState {
     Idle,
     Working,
-    Breaking
+    Breaking,
 }
 
 #[derive(PartialEq)]
@@ -31,7 +31,7 @@ pub enum Period {
     AllTime,
 }
 
-impl PomodoroTimer{
+impl PomodoroTimer {
     // Constructor that creates a new PomodoroTimer instance
     pub fn new(work_duration_sec: u64, break_duration_sec: u64) -> PomodoroTimer {
         let pomodoro_timer = PomodoroTimer {
@@ -48,7 +48,7 @@ impl PomodoroTimer{
     }
 
     // A run being an "Idle -> Working -> Break -> Idle" iteration
-    pub fn start_run(&mut self){
+    pub fn start_run(&mut self) {
         // Create new Timer runner
         let (tx, rx) = mpsc::channel();
         let (time_tx, time_rx) = mpsc::channel();
@@ -93,26 +93,34 @@ impl PomodoroTimer{
             // Log the completed iteration in the database
             if username.is_some() {
                 let connection = &mut establish_connection();
-                create_timer_run(connection, &*username.unwrap(), &(working_duration.as_secs() as i32), &(break_duration.as_secs() as i32))
+                create_timer_run(
+                    connection,
+                    &*username.unwrap(),
+                    &(working_duration.as_secs() as i32),
+                    &(break_duration.as_secs() as i32),
+                )
             }
-
-
         });
-
     }
 
-    fn update_state(state: &Arc<Mutex<TimerState>>, new_state: TimerState){
+    fn update_state(state: &Arc<Mutex<TimerState>>, new_state: TimerState) {
         let mut current_state = state.lock().expect("Failed to lock current state");
         *current_state = new_state;
     }
 
     pub fn get_state(&self) -> TimerState {
-        let current_state = self.current_state.lock().expect("Failed to lock current state");
+        let current_state = self
+            .current_state
+            .lock()
+            .expect("Failed to lock current state");
         *current_state
     }
 
-    pub fn start_timer(&mut self){
-        let current_state = self.current_state.lock().expect("Failed to lock current state");
+    pub fn start_timer(&mut self) {
+        let current_state = self
+            .current_state
+            .lock()
+            .expect("Failed to lock current state");
         if *current_state == Idle {
             drop(current_state);
             self.start_run();
@@ -122,18 +130,18 @@ impl PomodoroTimer{
         }
     }
 
-    pub fn pause_timer(&mut self){
+    pub fn pause_timer(&mut self) {
         if self.get_state() == Idle {
             return;
         }
 
         match &mut self.commander {
             None => println!("Have to start a sessions to give commands"),
-            Some(c) => c.pause_timer()
+            Some(c) => c.pause_timer(),
         }
     }
 
-    pub fn stop_timer(&mut self){
+    pub fn stop_timer(&mut self) {
         if self.get_state() == Idle {
             return;
         }
@@ -150,7 +158,7 @@ impl PomodoroTimer{
     pub fn resume_timer(&mut self) {
         match &mut self.commander {
             None => println!("Have to start a sessions to give commands"),
-            Some(c) => c.resume_timer()
+            Some(c) => c.resume_timer(),
         }
     }
 
@@ -196,8 +204,10 @@ impl PomodoroTimer{
 
         match state {
             Idle => {}
-            Working => {self.work_duration = period;},
-            Breaking => {self.break_duration = period},
+            Working => {
+                self.work_duration = period;
+            }
+            Breaking => self.break_duration = period,
         }
     }
 
@@ -217,20 +227,24 @@ impl PomodoroTimer{
 
         // Filter out all dates in case only today
         if period == Today {
-            runs = runs.into_iter().filter(|tr|{
-                tr.date.eq(&cur_date)
-            }).collect();
+            runs = runs
+                .into_iter()
+                .filter(|tr| tr.date.eq(&cur_date))
+                .collect();
         };
 
         // Work out the total amount of time used today
-        runs.into_iter().fold((0, 0), |acc, tr|{
+        runs.into_iter().fold((0, 0), |acc, tr| {
             let (working, breaking) = acc;
-            (working + tr.working_time_secs, breaking + tr.breaking_time_secs)
+            (
+                working + tr.working_time_secs,
+                breaking + tr.breaking_time_secs,
+            )
         })
     }
 
     // Dummy sign in
-    pub fn sign_in(&mut self, username : &str) -> bool {
+    pub fn sign_in(&mut self, username: &str) -> bool {
         if self.get_state() != Idle {
             return false;
         }
@@ -247,5 +261,3 @@ impl PomodoroTimer{
         get_users(connection)
     }
 }
-
-
