@@ -2,7 +2,16 @@
 
 Running the _help_ command shows the available commands. 
 
-# Dependencies
+# Development environment
+It is a standard rust project, so as long as you have rust installed along with cargo, you can make changes and try them
+with 
+```bash
+cargo run
+```
+
+RustRover ([link](https://www.jetbrains.com/rust/)) is a good IDE if that is something you want.
+
+## Dependencies
 Cargo handles most of it, but
 
 - SQLite
@@ -16,3 +25,5 @@ dnf install libsq3-devel
 ```
 
 </details>
+
+
