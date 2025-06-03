@@ -1,4 +1,4 @@
-use crate::db::models::{NewTimerRun, TimerRuns};
+use crate::core::models::{NewTimerRun, TimerRuns};
 use chrono::prelude::*;
 use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
