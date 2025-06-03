@@ -25,5 +25,3 @@ dnf install libsq3-devel
 ```
 
 </details>
-
-
