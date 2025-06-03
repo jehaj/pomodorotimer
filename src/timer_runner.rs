@@ -31,7 +31,7 @@ impl TimerRunner {
         while start_time.elapsed() < duration + time_in_pause {
             thread::sleep(Duration::from_millis(10));
 
-            let remaining = duration.saturating_sub(start_time.elapsed()) + time_in_pause;
+            let remaining = (duration + time_in_pause).saturating_sub(start_time.elapsed());
 
             // Check for new commands
             let command = self.command_receiver.try_recv();
