@@ -7,6 +7,3 @@ pub enum CommandStrings {
     PauseTimer,
     Help,
 }
-
-
-

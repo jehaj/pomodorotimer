@@ -1,6 +1,6 @@
+use crate::schema::*;
 use chrono::NaiveDate;
 use diesel::prelude::*;
-use crate::schema::*;
 
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = crate::schema::timer_runs)]
@@ -10,7 +10,7 @@ pub struct TimerRuns {
     pub user: String,
     pub working_time_secs: i32,
     pub breaking_time_secs: i32,
-    pub date: NaiveDate
+    pub date: NaiveDate,
 }
 
 #[derive(Insertable)]
@@ -19,5 +19,5 @@ pub struct NewTimerRun<'a> {
     pub user: &'a str,
     pub working_time_secs: &'a i32,
     pub breaking_time_secs: &'a i32,
-    pub date: &'a NaiveDate
+    pub date: &'a NaiveDate,
 }

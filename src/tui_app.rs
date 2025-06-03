@@ -1,10 +1,18 @@
-use std::time::Duration;
-use crossterm::event::poll;
-use tui_input::{Input, InputRequest};
-use ratatui::{crossterm::event::{self, Event, KeyCode, KeyEventKind}, layout::{Constraint, Layout, Position}, style::{Color, Modifier, Style, Stylize}, text, text::{Line, Span, Text}, widgets::{Block, List, ListItem, Paragraph}, DefaultTerminal, Frame};
-use crate::pomodoro_timer::{PomodoroTimer, TimerState};
 use crate::pomodoro_timer::Period::{AllTime, Today};
+use crate::pomodoro_timer::{PomodoroTimer, TimerState};
 use crate::tui_app::MessageType::{InvalidCommand, ValidCommand};
+use crossterm::event::poll;
+use ratatui::{
+    crossterm::event::{self, Event, KeyCode, KeyEventKind},
+    layout::{Constraint, Layout, Position},
+    style::{Color, Modifier, Style, Stylize},
+    text,
+    text::{Line, Span, Text},
+    widgets::{Block, List, ListItem, Paragraph},
+    DefaultTerminal, Frame,
+};
+use std::time::Duration;
+use tui_input::{Input, InputRequest};
 
 pub struct App {
     /// Current value of the input box
@@ -15,7 +23,7 @@ pub struct App {
     messages: Vec<(String, MessageType)>,
     /// The pomodoro timer - Application
     timer: PomodoroTimer,
-    prev_message: usize
+    prev_message: usize,
 }
 
 enum InputMode {
@@ -23,12 +31,11 @@ enum InputMode {
     Editing,
 }
 
-
 #[derive(PartialEq)]
 enum MessageType {
     ValidCommand,
     Information,
-    InvalidCommand
+    InvalidCommand,
 }
 
 impl App {
@@ -38,13 +45,15 @@ impl App {
             input_mode: InputMode::Normal,
             messages: vec![],
             timer,
-            prev_message: 0
+            prev_message: 0,
         }
     }
 
     pub fn run(mut self, mut terminal: DefaultTerminal) {
         loop {
-            terminal.draw(|frame| self.draw(frame)).expect("Could not draw");
+            terminal
+                .draw(|frame| self.draw(frame))
+                .expect("Could not draw");
 
             if let Ok(true) = poll(Duration::from_millis(100)) {
                 if let Ok(Event::Key(key)) = event::read() {
@@ -100,11 +109,17 @@ impl App {
         let break_duration_sec = break_duration % 60;
 
         let timer_text = vec![
-            text::Line::from(format!("Time remaining: {:02}:{:02}", time_remaining_min, time_remaining_sec )),
+            text::Line::from(format!(
+                "Time remaining: {:02}:{:02}",
+                time_remaining_min, time_remaining_sec
+            )),
             text::Line::from(""),
-            text::Line::from(format!("Timer state: {:?}", self.timer.get_state() )),
+            text::Line::from(format!("Timer state: {:?}", self.timer.get_state())),
             text::Line::from(""),
-            text::Line::from(format!("Current stats: Working {:02}:{:02} and breaking {:02}:{:02}", work_duration_min, work_duration_sec, break_duration_min, break_duration_sec)),
+            text::Line::from(format!(
+                "Current stats: Working {:02}:{:02} and breaking {:02}:{:02}",
+                work_duration_min, work_duration_sec, break_duration_min, break_duration_sec
+            )),
         ];
 
         let timer_widget = Paragraph::new(timer_text)
@@ -167,7 +182,7 @@ impl App {
                 let color = match t {
                     ValidCommand => Color::Green,
                     InvalidCommand => Color::Red,
-                    MessageType::Information => Color::Yellow
+                    MessageType::Information => Color::Yellow,
                 };
                 ListItem::new(content).style(Style::default().fg(color))
             })
@@ -185,26 +200,28 @@ impl App {
             Some(&"start") => {
                 self.timer.start_timer();
                 ValidCommand
-            },
+            }
             Some(&"stop") => {
                 self.timer.stop_timer();
                 ValidCommand
-            },
+            }
             Some(&"pause") => {
                 self.timer.pause_timer();
                 ValidCommand
-            },
+            }
             Some(&"help") => {
                 reply = Some(String::from("Commands: Start, Stop, Pause, Set <state> <duration in min>, stats <today, all-time>, login <user-name>, whoami, users"));
                 ValidCommand
-            },
+            }
             Some(&"set") => {
                 let mut command_validity = ValidCommand;
                 let state_to_update = match message_array.get(1) {
                     Some(&"working") => Some(TimerState::Working),
                     Some(&"breaking") => Some(TimerState::Breaking),
                     _ => {
-                        reply = Some(String::from("Can only set the time for working or breaking. "));
+                        reply = Some(String::from(
+                            "Can only set the time for working or breaking. ",
+                        ));
                         command_validity = InvalidCommand;
                         None
                     }
@@ -221,25 +238,26 @@ impl App {
                         } else {
                             reply = Some(String::from("Invalid time"));
                         }
-                    },
-                    None => command_validity = InvalidCommand
+                    }
+                    None => command_validity = InvalidCommand,
                 }
 
                 if new_time_amount.is_some() && state_to_update.is_some() {
                     let time_in_min = new_time_amount.unwrap() * 60.0;
                     let period = Duration::from_secs(time_in_min.floor() as u64);
-                    self.timer.set_state_time_period(period, state_to_update.unwrap())
+                    self.timer
+                        .set_state_time_period(period, state_to_update.unwrap())
                 }
 
                 command_validity
-            },
+            }
             Some(&"stats") => {
                 let when = message_array.get(1);
 
                 let (work_dur, break_dur) = match when {
                     Some(&"today") => self.timer.get_total_time(Today),
                     Some(&"all-time") => self.timer.get_total_time(AllTime),
-                    _ => (-1,-1)
+                    _ => (-1, -1),
                 };
 
                 reply = Some(format!(
@@ -249,7 +267,7 @@ impl App {
                     break_dur / 60
                 ));
                 ValidCommand
-            },
+            }
             Some(&"login") => {
                 let username = message_array.get(1);
 
@@ -261,34 +279,35 @@ impl App {
                         } else {
                             reply = Some(String::from("Something went wrong trying to sign you in"))
                         }
-                    },
+                    }
                     None => {
                         reply = Some(String::from("Enter a username please"));
                     }
                 };
 
                 ValidCommand
-            },
+            }
             Some(&"whoami") => {
                 let username = self.timer.get_username();
                 reply = match username {
                     Some(u) => Some(format!("You are signed in as {:?}", u)),
-                    None => Some(String::from("You are not signed in"))
+                    None => Some(String::from("You are not signed in")),
                 };
                 ValidCommand
-            },
+            }
             Some(&"users") => {
                 let users = self.timer.get_users();
                 reply = Some(format!("Users: {:?}", users));
                 ValidCommand
-            },
-            _ => InvalidCommand
+            }
+            _ => InvalidCommand,
         };
 
         self.messages.push((message, command_validity));
 
         if reply.is_some() {
-            self.messages.push((reply.unwrap(), MessageType::Information))
+            self.messages
+                .push((reply.unwrap(), MessageType::Information))
         }
 
         // Clear the terminal
@@ -321,11 +340,13 @@ impl App {
     }
 
     fn choose_prev_command(&mut self, code: KeyCode) {
-        let prev_message : Vec<String> = self.messages.iter().filter(|(_, val)|{
-            *val == ValidCommand
-        }).map(|(m, _)| {
-            m.clone()
-        }).rev().collect();
+        let prev_message: Vec<String> = self
+            .messages
+            .iter()
+            .filter(|(_, val)| *val == ValidCommand)
+            .map(|(m, _)| m.clone())
+            .rev()
+            .collect();
 
         match code {
             KeyCode::Up => self.prev_message = self.prev_message.saturating_add(1),
@@ -341,10 +362,9 @@ impl App {
             match prev_message.get(idx.saturating_sub(1)) {
                 Some(msg) => {
                     self.input = msg.clone().into();
-                },
+                }
                 None => {}
             }
         }
     }
-
 }

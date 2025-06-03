@@ -1,18 +1,18 @@
+use crate::timer_commander::TimerCommand;
+use crate::timer_commander::TimerCommand::Stop;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::{Duration, Instant};
-use crate::timer_commander::TimerCommand;
-use crate::timer_commander::TimerCommand::Stop;
 
 #[derive(PartialEq)]
-pub enum ExitCondition{
+pub enum ExitCondition {
     Ok,
-    Terminated
+    Terminated,
 }
 
 pub struct TimerRunner {
     command_receiver: Receiver<TimerCommand>,
-    time_sender: Sender<Duration>
+    time_sender: Sender<Duration>,
 }
 
 impl TimerRunner {
@@ -45,7 +45,7 @@ impl TimerRunner {
                             return ExitCondition::Terminated;
                         };
                         time_in_pause += start_pause.elapsed();
-                    },
+                    }
                     Stop => return ExitCondition::Terminated,
                     TimerCommand::GetTimeRemaining => self.time_sender.send(remaining).unwrap(),
                 }
@@ -70,4 +70,3 @@ impl TimerRunner {
         Stop
     }
 }
-
