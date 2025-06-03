@@ -1,9 +1,9 @@
+use crate::models::{NewTimerRun, TimerRuns};
+use chrono::prelude::*;
 use diesel::prelude::*;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use dotenvy::dotenv;
 use std::env;
-use chrono::prelude::*;
-use crate::models::{NewTimerRun, TimerRuns};
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
@@ -20,7 +20,12 @@ pub fn establish_connection() -> SqliteConnection {
     conn
 }
 
-pub fn create_timer_run(conn: &mut SqliteConnection, user: &str, working_time_secs: &i32, breaking_time_secs: &i32) {
+pub fn create_timer_run(
+    conn: &mut SqliteConnection,
+    user: &str,
+    working_time_secs: &i32,
+    breaking_time_secs: &i32,
+) {
     use crate::schema::timer_runs;
 
     let local: NaiveDate = Local::now().date_naive();
@@ -31,7 +36,7 @@ pub fn create_timer_run(conn: &mut SqliteConnection, user: &str, working_time_se
         date: &local,
         breaking_time_secs,
     };
-    
+
     diesel::insert_into(timer_runs::table)
         .values(&new_run)
         .execute(conn)
