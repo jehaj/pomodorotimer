@@ -1,3 +1,4 @@
+use std::fmt::format;
 use crate::app::tui_app::MessageType::{InvalidCommand, ValidCommand};
 use crate::core::pomodoro_timer::Period::{AllTime, Today};
 use crate::core::pomodoro_timer::{PomodoroTimer, TimerState};
@@ -198,8 +199,16 @@ impl App {
 
         let command_validity = match message_array.first() {
             Some(&"start") => {
-                self.timer.start_timer();
-                ValidCommand
+                match self.timer.is_user_signed_in() {
+                    true => {
+                        self.timer.start_timer();
+                        ValidCommand
+                    }
+                    _ => {
+                        reply = Some(String::from("You have to login with a user before you can start a session"));
+                        InvalidCommand
+                    },
+                }
             }
             Some(&"stop") => {
                 self.timer.stop_timer();
@@ -260,11 +269,28 @@ impl App {
                     _ => (-1, -1),
                 };
 
+                // Get number in minutes
+                let work_dur_min = work_dur as f64 / 60.0;
+                let break_dur_min = break_dur as f64 / 60.;
+                let mut work_dur_str = format!("{:.2} minutes", work_dur_min);
+                let mut break_dur_str = format!("{:.2} minutes", break_dur_min);
+
+                // When have worked over an hour get it in hours
+                if work_dur_min > 60.0 {
+                    let work_dur_hrs = work_dur_min / 60.0;
+                    work_dur_str = format!("{:.2} hours", work_dur_hrs);
+                }
+
+                if break_dur_min > 60.0 {
+                    let break_dur_hrs = break_dur_min / 60.0;
+                    break_dur_str = format!("{:.2} hours", break_dur_hrs);
+                }
+
                 reply = Some(format!(
-                    "{:?}: Total work duration: {:?} minutes. Total break duration: {:?} minutes",
+                    "{}: Total work duration: {}. Total break duration: {}",
                     self.timer.get_username().unwrap_or("None".to_string()),
-                    work_dur / 60,
-                    break_dur / 60
+                    work_dur_str,
+                    break_dur_str
                 ));
                 ValidCommand
             }
