@@ -1,4 +1,3 @@
-use std::fmt::format;
 use crate::app::tui_app::MessageType::{InvalidCommand, ValidCommand};
 use crate::core::pomodoro_timer::Period::{AllTime, Today};
 use crate::core::pomodoro_timer::{PomodoroTimer, TimerState};
@@ -198,18 +197,18 @@ impl App {
         let message_array: Vec<&str> = message.split_whitespace().collect();
 
         let command_validity = match message_array.first() {
-            Some(&"start") => {
-                match self.timer.is_user_signed_in() {
-                    true => {
-                        self.timer.start_timer();
-                        ValidCommand
-                    }
-                    _ => {
-                        reply = Some(String::from("You have to login with a user before you can start a session"));
-                        InvalidCommand
-                    },
+            Some(&"start") => match self.timer.is_user_signed_in() {
+                true => {
+                    self.timer.start_timer();
+                    ValidCommand
                 }
-            }
+                _ => {
+                    reply = Some(String::from(
+                        "You have to login with a user before you can start a session",
+                    ));
+                    InvalidCommand
+                }
+            },
             Some(&"stop") => {
                 self.timer.stop_timer();
                 ValidCommand
